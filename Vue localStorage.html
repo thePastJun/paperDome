@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="`en`">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.bootcss.com/vue/2.6.10/vue.js"></script>
+    <link href="https://cdn.bootcss.com/twitter-bootstrap/3.3.7/css/bootstrap.css" rel="stylesheet">
+    <title>Document</title>
+    <style>
+        .header{
+            margin-top: 50px;
+        }
+       .sp{
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container header">
+
+
+    <div id="app">
+        <cmt-box @func="loadComments"></cmt-box>
+        <ul class="list-group">
+            <li class="list-group-item" v-for="item in list" :key="item.id">
+                {{item.content}}
+                <span class="badge sp">评论人: {{item.user}}</span>
+            </li>
+        </ul>
+    </div>
+
+    <template id="tmp1">
+        <div>
+            <div class="form-group">
+                <label>评论人：</label>
+                <input class="form-control" type="text" v-model="user">
+            </div>
+            <div class="form-group">
+                <label>评论内容：</label>
+                <textarea class="form-control" v-model="content"></textarea>
+            </div>
+            <div class="form-group">
+                <input class="btn btn-primary" type="button" value="发表评论" @click="postComment">
+            </div>
+        </div>
+    </template>
+
+
+</div>
+</body>
+<script>
+
+    let commentBox = {
+        template: "#tmp1",
+        data() {
+            return {
+                user: '',
+                content: ''
+            }
+
+        },
+        methods: {
+            postComment() {
+                /* 分析：发表评论的业务逻辑 --->
+                1.评论数据存到localStorage中 localStorage.setItem
+                2.先组织出一个最新的评论数据对象
+                3.想办法，把第二部中得到的评论对象，保存到localStorage中:
+                    3.1  localStorage 只支持存放字符串数据，要先调用JSON.stringify
+                    3.2  在保存最新的评论数据之前，要先从localStorage获取到之前评论的数据（string）转换为一个 数组对象 然后把最新的评论，push到这个数组
+                    3.3  如果获取到的localStorage中的评论字符串，为空不存在，则可以返回一个‘[]’让JSON.parse去转换
+                    3.4  把最新的评论列表数组，再次调用JSON.stringify转为数组字符串，然后调用localStorage.setItem()
+                */
+                if (this.user === "" || this.content === "") return;
+                let comment = {id: Date.now(), user: this.user, content: this.content};
+                //从 localStorage中获取所有的评论
+                let list = JSON.parse(localStorage.getItem('cmts') || '[]');
+                list.unshift(comment);
+                //重新保存最新的评论数据
+                localStorage.setItem('cmts', JSON.stringify(list));
+
+                this.user = this.content = '';
+
+                this.$emit('func');
+            }
+        }
+    };
+
+    new Vue({
+        el: "#app",
+        data: {
+            list: [
+                {id: Date.now(), user: "人马", content: "风吹草地见人马"}
+            ]
+        },
+        beforeCreate() {//这里不能调用loadCommons方法，因为在执行这个钩子函数的时候，data和methods都还没有被初始化好
+        },
+        created() {
+            this.loadComments()
+        },
+        methods: {
+            loadComments() {//从本地localStorage中，加载评论列表
+                let list = JSON.parse(localStorage.getItem('cmts') || '[]');
+
+                this.list = list;
+            }
+        },
+        components: {
+            "cmt-box": commentBox
+        }
+
+    });
+
+</script>
+</html>
